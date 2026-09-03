@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-bg: #f2f1ea;
+  --color-surface: #ffffff;
+  --color-border: #e5e3da;
+  --color-text: #16211f;
+  --color-text-secondary: #5c6663;
+  --color-label: #7c8c86;
+
+  --color-primary: #1f3d34;
+  --color-primary-hover: #16302a;
+  --color-primary-disabled: #9db3ac;
+
+  --color-danger: #c23b3b;
+  --color-danger-bg: #fbe6e6;
+  --color-danger-border: #f3c8c8;
+
+  --color-badge-active-bg: #d9ede4;
+  --color-badge-active-text: #1f6f5c;
+  --color-badge-pending-bg: #fbe8d0;
+  --color-badge-pending-text: #b5651d;
+  --color-badge-high-bg: #fbdede;
+  --color-badge-high-text: #c23b3b;
+  --color-badge-low-bg: #e7e9f5;
+  --color-badge-low-text: #4b5580;
+
+  /* shadcn/ui semantic tokens (mapped onto the palette above) */
+  --color-background: #f2f1ea;
+  --color-foreground: #16211f;
+  --color-card: #ffffff;
+  --color-card-foreground: #16211f;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #16211f;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e9e7dd;
+  --color-secondary-foreground: #16211f;
+  --color-muted: #e9e7dd;
+  --color-muted-foreground: #5c6663;
+  --color-accent: #e9e7dd;
+  --color-accent-foreground: #16211f;
+  --color-destructive: #c23b3b;
+  --color-destructive-foreground: #ffffff;
+  --color-input: #e5e3da;
+  --color-ring: #1f3d34;
+
+  --radius-card: 16px;
+  --radius-field: 10px;
+
+  --shadow-card: 0 1px 2px rgba(22, 33, 31, 0.04), 0 12px 32px rgba(22, 33, 31, 0.06);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+  }
+}

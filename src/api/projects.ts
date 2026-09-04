@@ -1,6 +1,8 @@
 import { apiClient } from "./client";
 import type { PaginatedResponse } from "./clients";
 
+export type ProjectStatus = "Active" | "Inactive";
+
 export interface Project {
   project_id: string;
   project_name: string;
@@ -11,7 +13,7 @@ export interface Project {
   project_end_date: string | null;
   project_description: string | null;
   budget_hours: number | null;
-  status: string;
+  status: ProjectStatus;
   created_at: string;
   created_by: string;
   updated_at: string | null;
@@ -30,7 +32,7 @@ export interface ProjectCreateInput {
 }
 
 export type ProjectUpdateInput = Partial<Omit<ProjectCreateInput, "client_id">> & {
-  status?: string;
+  status?: ProjectStatus;
 };
 
 export async function listProjects(

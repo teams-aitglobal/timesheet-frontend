@@ -1,6 +1,8 @@
 import { apiClient } from "./client";
 import type { PaginatedResponse } from "./clients";
 
+export type ClientSpocStatus = "Active" | "Inactive";
+
 export interface ClientSpoc {
   client_spoc_id: string;
   client_id: string;
@@ -9,7 +11,7 @@ export interface ClientSpoc {
   phone: string;
   designation: string | null;
   is_primary: boolean;
-  status: string;
+  status: ClientSpocStatus;
   created_at: string;
   created_by: string;
   updated_at: string | null;
@@ -26,7 +28,7 @@ export interface ClientSpocCreateInput {
 }
 
 export type ClientSpocUpdateInput = Partial<Omit<ClientSpocCreateInput, "client_id">> & {
-  status?: string;
+  status?: ClientSpocStatus;
 };
 
 export async function listClientSpocs(

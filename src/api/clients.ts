@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 
+export type ClientStatus = "Active" | "Inactive";
+
 export interface Client {
   client_id: string;
   client_name: string;
@@ -7,7 +9,7 @@ export interface Client {
   phone: string | null;
   industry: string | null;
   description: string | null;
-  status: string;
+  status: ClientStatus;
   created_at: string;
   created_by: string;
   updated_at: string | null;
@@ -23,7 +25,7 @@ export interface ClientCreateInput {
 }
 
 export type ClientUpdateInput = Partial<ClientCreateInput> & {
-  status?: string;
+  status?: ClientStatus;
 };
 
 export interface PaginatedResponse<T> {

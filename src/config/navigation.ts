@@ -22,7 +22,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   { label: "Clients", path: "/clients", icon: Users, roles: ["SUPER_ADMIN"] },
-  { label: "Projects", path: "/projects", icon: FolderKanban },
+  { label: "Projects", path: "/projects", icon: FolderKanban, roles: ["SUPER_ADMIN", "PROGRAM_MANAGER"] },
+  { label: "My Projects", path: "/my-projects", icon: FolderKanban, roles: ["EMPLOYEE"] },
   { label: "Reports", path: "/reports", icon: FileBarChart },
   { label: "User Management", path: "/users", icon: UserCog, roles: ["SUPER_ADMIN"] },
 ];

@@ -57,3 +57,24 @@ export async function deactivateProjectAssignment(id: string): Promise<ProjectAs
   const { data } = await apiClient.delete<ProjectAssignment>(`/project-assignments/${id}`);
   return data;
 }
+
+export type ProjectStatus = "Active" | "Inactive";
+
+export interface MyProjectAssignment {
+  project_assignment_id: string;
+  project_id: string;
+  project_name: string;
+  project_status: ProjectStatus;
+  project_start_date: string;
+  project_end_date: string | null;
+  allocated_hours: number;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  remarks: string | null;
+}
+
+export async function listMyProjectAssignments(): Promise<MyProjectAssignment[]> {
+  const { data } = await apiClient.get<MyProjectAssignment[]>("/project-assignments/me");
+  return data;
+}

@@ -7,6 +7,8 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Projects from "./pages/Projects";
+import MyProjects from "./pages/MyProjects";
+import MyProjectTasks from "./pages/MyProjectTasks";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
 import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
@@ -42,7 +44,30 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/projects" element={<Projects />} />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROGRAM_MANAGER"]}>
+                  <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-projects"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <MyProjects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-projects/:projectId"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <MyProjectTasks />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/projects/:projectId" element={<ProjectWorkspace />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/profile" element={<Profile />} />

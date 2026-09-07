@@ -10,6 +10,8 @@ const badgeVariants = cva(
       variant: {
         active: "bg-badge-active-bg text-badge-active-text",
         muted: "bg-secondary text-text-secondary",
+        pending: "bg-badge-pending-bg text-badge-pending-text",
+        rejected: "bg-badge-high-bg text-badge-high-text",
       },
     },
     defaultVariants: {

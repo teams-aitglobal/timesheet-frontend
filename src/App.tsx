@@ -9,6 +9,8 @@ import ClientDetail from "./pages/ClientDetail";
 import Projects from "./pages/Projects";
 import MyProjects from "./pages/MyProjects";
 import MyProjectTasks from "./pages/MyProjectTasks";
+import Timesheet from "./pages/Timesheet";
+import TimesheetApprovals from "./pages/TimesheetApprovals";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
 import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
@@ -65,6 +67,22 @@ export default function App() {
               element={
                 <ProtectedRoute roles={["EMPLOYEE"]}>
                   <MyProjectTasks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timesheet"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <Timesheet />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <ProtectedRoute roles={["PROGRAM_MANAGER"]}>
+                  <TimesheetApprovals />
                 </ProtectedRoute>
               }
             />

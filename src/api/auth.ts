@@ -18,6 +18,7 @@ export interface MeResponse {
   email: string;
   first_name: string;
   last_name: string;
+  designation_id: string | null;
   roles: string[];
   permissions: string[];
 }

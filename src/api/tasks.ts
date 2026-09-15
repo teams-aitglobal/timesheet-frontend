@@ -58,3 +58,25 @@ export async function cancelTask(id: string): Promise<Task> {
   const { data } = await apiClient.delete<Task>(`/tasks/${id}`);
   return data;
 }
+
+export interface MyTask {
+  task_id: string;
+  project_id: string;
+  task_assignment_id: string;
+  task_name: string;
+  task_description: string | null;
+  planned_hours: number | null;
+  start_date: string;
+  due_date: string | null;
+  status: TaskStatus;
+}
+
+export async function listMyTasks(params: { project_id?: string } = {}): Promise<MyTask[]> {
+  const { data } = await apiClient.get<MyTask[]>("/tasks/me", { params });
+  return data;
+}
+
+export async function updateMyTaskStatus(taskId: string, taskStatus: TaskStatus): Promise<Task> {
+  const { data } = await apiClient.patch<Task>(`/tasks/me/${taskId}`, { status: taskStatus });
+  return data;
+}

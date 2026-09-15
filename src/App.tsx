@@ -7,6 +7,10 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Projects from "./pages/Projects";
+import MyProjects from "./pages/MyProjects";
+import MyProjectTasks from "./pages/MyProjectTasks";
+import Timesheet from "./pages/Timesheet";
+import TimesheetApprovals from "./pages/TimesheetApprovals";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
 import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
@@ -29,7 +33,7 @@ export default function App() {
             <Route
               path="/clients"
               element={
-                <ProtectedRoute roles={["SUPER_ADMIN"]}>
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
                   <Clients />
                 </ProtectedRoute>
               }
@@ -37,12 +41,51 @@ export default function App() {
             <Route
               path="/clients/:clientId"
               element={
-                <ProtectedRoute roles={["SUPER_ADMIN"]}>
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
                   <ClientDetail />
                 </ProtectedRoute>
               }
             />
-            <Route path="/projects" element={<Projects />} />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
+                  <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-projects"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <MyProjects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-projects/:projectId"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <MyProjectTasks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timesheet"
+              element={
+                <ProtectedRoute roles={["EMPLOYEE"]}>
+                  <Timesheet />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <ProtectedRoute roles={["PROJECT_MANAGER"]}>
+                  <TimesheetApprovals />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/projects/:projectId" element={<ProjectWorkspace />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/profile" element={<Profile />} />

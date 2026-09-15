@@ -3,22 +3,41 @@ import { Download, FolderKanban } from "lucide-react";
 
 import { downloadProjectHoursReportCsv, getProjectHoursReport, type ProjectHoursReportRow } from "@/api/reports";
 import { extractErrorMessage } from "@/api/auth";
+import { listClients, type Client } from "@/api/clients";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+const selectClassName = cn(
+  "flex h-9 w-full min-w-0 rounded-field border border-input bg-surface px-3 py-1.5 text-sm text-text transition-colors outline-none",
+  "focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/12",
+);
 
 export function ProjectHoursReportTab() {
+  // Draft reflects the control on screen; it only takes effect once "Apply Filters" is clicked.
+  const [draftClient, setDraftClient] = useState("");
+  const [appliedClient, setAppliedClient] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
   const [items, setItems] = useState<ProjectHoursReportRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const isDirty = draftClient !== appliedClient;
+
+  useEffect(() => {
+    listClients({ limit: 200 })
+      .then((res) => setClients(res.items))
+      .catch(() => setClients([]));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setLoadError(null);
-    getProjectHoursReport()
+    getProjectHoursReport({ client_id: appliedClient || undefined })
       .then((res) => {
         if (!cancelled) setItems(res);
       })
@@ -31,13 +50,20 @@ export function ProjectHoursReportTab() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appliedClient]);
+
+  const applyFilters = () => setAppliedClient(draftClient);
+
+  const resetFilters = () => {
+    setDraftClient("");
+    setAppliedClient("");
+  };
 
   const exportCsv = async () => {
     setExportError(null);
     setIsExporting(true);
     try {
-      await downloadProjectHoursReportCsv();
+      await downloadProjectHoursReportCsv({ client_id: appliedClient || undefined });
     } catch (err) {
       setExportError(extractErrorMessage(err));
     } finally {
@@ -47,7 +73,30 @@ export function ProjectHoursReportTab() {
 
   return (
     <div>
-      <div className="mt-6 flex items-center justify-end">
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-label">Client</p>
+            <select
+              className={cn(selectClassName, "min-w-[160px]")}
+              value={draftClient}
+              onChange={(e) => setDraftClient(e.target.value)}
+            >
+              <option value="">All clients</option>
+              {clients.map((c) => (
+                <option key={c.client_id} value={c.client_id}>
+                  {c.client_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button type="button" onClick={applyFilters} disabled={!isDirty}>
+            Apply Filters
+          </Button>
+          <Button type="button" variant="outline" onClick={resetFilters} disabled={!appliedClient && !isDirty}>
+            Reset
+          </Button>
+        </div>
         <Button type="button" variant="outline" onClick={exportCsv} disabled={isExporting || items.length === 0}>
           <Download size={16} />
           {isExporting ? "Exporting…" : "Export CSV"}

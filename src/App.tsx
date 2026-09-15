@@ -33,7 +33,7 @@ export default function App() {
             <Route
               path="/clients"
               element={
-                <ProtectedRoute roles={["SUPER_ADMIN"]}>
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
                   <Clients />
                 </ProtectedRoute>
               }
@@ -41,7 +41,7 @@ export default function App() {
             <Route
               path="/clients/:clientId"
               element={
-                <ProtectedRoute roles={["SUPER_ADMIN"]}>
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
                   <ClientDetail />
                 </ProtectedRoute>
               }
@@ -49,7 +49,7 @@ export default function App() {
             <Route
               path="/projects"
               element={
-                <ProtectedRoute roles={["SUPER_ADMIN", "PROGRAM_MANAGER"]}>
+                <ProtectedRoute roles={["SUPER_ADMIN", "PROJECT_MANAGER"]}>
                   <Projects />
                 </ProtectedRoute>
               }
@@ -81,7 +81,7 @@ export default function App() {
             <Route
               path="/approvals"
               element={
-                <ProtectedRoute roles={["PROGRAM_MANAGER"]}>
+                <ProtectedRoute roles={["PROJECT_MANAGER"]}>
                   <TimesheetApprovals />
                 </ProtectedRoute>
               }

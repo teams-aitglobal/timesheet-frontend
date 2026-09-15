@@ -8,6 +8,10 @@ import {
   type TimesheetReportStatus,
 } from "@/api/reports";
 import { extractErrorMessage } from "@/api/auth";
+import { listClients, type Client } from "@/api/clients";
+import { listProjects } from "@/api/projects";
+import { listMyProjectAssignments } from "@/api/projectAssignments";
+import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,10 +39,36 @@ function formatDate(s: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Reports default to the current month so the page never opens on an unbounded, all-time query.
+function defaultDateRange(): { dateFrom: string; dateTo: string } {
+  const now = new Date();
+  return {
+    dateFrom: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    dateTo: toIsoDate(now),
+  };
+}
+
+const DEFAULT_FILTERS = {
+  statusFilter: "All" as TimesheetReportStatus | "All",
+  clientFilter: "",
+  projectFilter: "",
+  ...defaultDateRange(),
+};
+
 export function TimesheetReportTab() {
-  const [statusFilter, setStatusFilter] = useState<TimesheetReportStatus | "All">("All");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const { roles } = useAuth();
+  const canFilterByClientProject = roles.includes("PROJECT_MANAGER") || roles.includes("SUPER_ADMIN");
+
+  // Draft filters reflect the controls on screen; they only take effect once "Apply Filters" is clicked.
+  const [draft, setDraft] = useState(DEFAULT_FILTERS);
+  const [applied, setApplied] = useState(DEFAULT_FILTERS);
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<{ project_id: string; project_name: string }[]>([]);
   const [items, setItems] = useState<TimesheetReportRow[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -47,10 +77,14 @@ export function TimesheetReportTab() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(applied);
+
   const filterParams = {
-    timesheet_status: statusFilter === "All" ? undefined : statusFilter,
-    date_from: dateFrom || undefined,
-    date_to: dateTo || undefined,
+    timesheet_status: applied.statusFilter === "All" ? undefined : applied.statusFilter,
+    date_from: applied.dateFrom || undefined,
+    date_to: applied.dateTo || undefined,
+    client_id: canFilterByClientProject ? applied.clientFilter || undefined : undefined,
+    project_id: applied.projectFilter || undefined,
   };
 
   const load = (nextSkip = 0) => {
@@ -67,12 +101,45 @@ export function TimesheetReportTab() {
   };
 
   useEffect(() => {
+    if (!canFilterByClientProject) return;
+    listClients({ limit: 200 })
+      .then((res) => setClients(res.items))
+      .catch(() => setClients([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canFilterByClientProject]);
+
+  useEffect(() => {
+    // PM/Admin pick from the org's projects (optionally scoped by client); employees only ever
+    // see the projects they're actually assigned to, via /project-assignments/me.
+    if (canFilterByClientProject) {
+      listProjects({ client_id: draft.clientFilter || undefined, limit: 200 })
+        .then((res) => setProjects(res.items))
+        .catch(() => setProjects([]));
+    } else {
+      listMyProjectAssignments()
+        .then((assignments) => {
+          const byProject = new Map(assignments.map((a) => [a.project_id, a.project_name]));
+          setProjects(Array.from(byProject, ([project_id, project_name]) => ({ project_id, project_name })));
+        })
+        .catch(() => setProjects([]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canFilterByClientProject, draft.clientFilter]);
+
+  useEffect(() => {
     load(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, dateFrom, dateTo]);
+  }, [applied]);
 
   const hasNextPage = skip + PAGE_SIZE < total;
   const hasPrevPage = skip > 0;
+
+  const applyFilters = () => setApplied(draft);
+
+  const resetFilters = () => {
+    setDraft(DEFAULT_FILTERS);
+    setApplied(DEFAULT_FILTERS);
+  };
 
   const exportCsv = async () => {
     setExportError(null);
@@ -89,13 +156,47 @@ export function TimesheetReportTab() {
   return (
     <div>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {canFilterByClientProject && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-label">Client</p>
+              <select
+                className={cn(selectClassName, "min-w-[160px]")}
+                value={draft.clientFilter}
+                onChange={(e) => setDraft((d) => ({ ...d, clientFilter: e.target.value, projectFilter: "" }))}
+              >
+                <option value="">All clients</option>
+                {clients.map((c) => (
+                  <option key={c.client_id} value={c.client_id}>
+                    {c.client_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-label">Project</p>
+            <select
+              className={cn(selectClassName, "min-w-[160px]")}
+              value={draft.projectFilter}
+              onChange={(e) => setDraft((d) => ({ ...d, projectFilter: e.target.value }))}
+            >
+              <option value="">All projects</option>
+              {projects.map((p) => (
+                <option key={p.project_id} value={p.project_id}>
+                  {p.project_name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-label">Status</p>
             <select
               className={cn(selectClassName, "min-w-[140px]")}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as TimesheetReportStatus | "All")}
+              value={draft.statusFilter}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, statusFilter: e.target.value as TimesheetReportStatus | "All" }))
+              }
             >
               {STATUS_FILTERS.map((s) => (
                 <option key={s} value={s}>
@@ -109,9 +210,9 @@ export function TimesheetReportTab() {
             <input
               type="date"
               className={cn(selectClassName, "min-w-[150px]")}
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(e) => setDateFrom(e.target.value)}
+              value={draft.dateFrom}
+              max={draft.dateTo || undefined}
+              onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))}
             />
           </div>
           <div>
@@ -119,11 +220,22 @@ export function TimesheetReportTab() {
             <input
               type="date"
               className={cn(selectClassName, "min-w-[150px]")}
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => setDateTo(e.target.value)}
+              value={draft.dateTo}
+              min={draft.dateFrom || undefined}
+              onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))}
             />
           </div>
+          <Button type="button" onClick={applyFilters} disabled={!isDirty}>
+            Apply Filters
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetFilters}
+            disabled={JSON.stringify(applied) === JSON.stringify(DEFAULT_FILTERS) && !isDirty}
+          >
+            Reset
+          </Button>
         </div>
         <Button type="button" variant="outline" onClick={exportCsv} disabled={isExporting || total === 0}>
           <Download size={16} />
@@ -154,11 +266,12 @@ export function TimesheetReportTab() {
       {!loadError && (isLoading || items.length > 0) && (
         <Card className="mt-6 gap-0 py-0">
           <CardContent className="overflow-x-auto px-0">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="w-full min-w-[1020px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-[0.04em] text-label">
                   <th className="px-6 py-3.5 font-semibold">Employee</th>
                   <th className="px-2 py-3.5 font-semibold">Date</th>
+                  <th className="px-2 py-3.5 font-semibold">Client</th>
                   <th className="px-2 py-3.5 font-semibold">Project</th>
                   <th className="px-2 py-3.5 font-semibold">Task</th>
                   <th className="px-2 py-3.5 font-semibold">Hours</th>
@@ -169,7 +282,7 @@ export function TimesheetReportTab() {
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, index) => (
                       <tr key={index} className="border-b border-border last:border-b-0">
-                        <td className="px-6 py-4" colSpan={6}>
+                        <td className="px-6 py-4" colSpan={7}>
                           <div className="h-4 w-full max-w-[420px] animate-pulse rounded bg-bg" />
                         </td>
                       </tr>
@@ -178,6 +291,7 @@ export function TimesheetReportTab() {
                       <tr key={row.timesheet_id} className="border-b border-border last:border-b-0">
                         <td className="px-6 py-4 font-medium text-text">{row.employee_name}</td>
                         <td className="px-2 py-4 text-text-secondary">{formatDate(row.work_date)}</td>
+                        <td className="px-2 py-4 text-text-secondary">{row.client_name}</td>
                         <td className="px-2 py-4 text-text-secondary">{row.project_name}</td>
                         <td className="px-2 py-4 text-text-secondary">{row.task_name || row.work_type}</td>
                         <td className="px-2 py-4 text-text-secondary">{row.hours}</td>

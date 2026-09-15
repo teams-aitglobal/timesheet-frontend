@@ -23,13 +23,13 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
-  { label: "Clients", path: "/clients", icon: Users, roles: ["SUPER_ADMIN"] },
-  { label: "Projects", path: "/projects", icon: FolderKanban, roles: ["SUPER_ADMIN", "PROGRAM_MANAGER"] },
+  { label: "Clients", path: "/clients", icon: Users, roles: ["SUPER_ADMIN", "PROJECT_MANAGER"] },
+  { label: "Projects", path: "/projects", icon: FolderKanban, roles: ["SUPER_ADMIN", "PROJECT_MANAGER"] },
   {
     label: "Timesheet Approvals",
     path: "/approvals",
     icon: ClipboardCheck,
-    roles: ["PROGRAM_MANAGER"],
+    roles: ["PROJECT_MANAGER"],
   },
   { label: "My Projects", path: "/my-projects", icon: FolderKanban, roles: ["EMPLOYEE"] },
   { label: "Timesheet", path: "/timesheet", icon: Clock, roles: ["EMPLOYEE"] },

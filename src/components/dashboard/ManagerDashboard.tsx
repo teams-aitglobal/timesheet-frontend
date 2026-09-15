@@ -22,11 +22,20 @@ export function ManagerDashboard({ data }: Props) {
   return (
     <div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="My projects" value={data.my_projects} />
-        <StatCard label="Clients" value={data.clients} />
+        <StatCard label="My projects" value={data.my_projects} onClick={() => navigate("/projects")} />
+        <StatCard label="Clients" value={data.clients} onClick={() => navigate("/clients")} />
         <StatCard label="Team members" value={data.team_members} icon={Users} />
-        <StatCard label="Pending approvals" value={data.pending_approvals} icon={ClipboardCheck} />
-        <StatCard label="Hours awaiting approval" value={`${data.hours_awaiting_approval.toFixed(1)}h`} />
+        <StatCard
+          label="Pending approvals"
+          value={data.pending_approvals}
+          icon={ClipboardCheck}
+          onClick={() => navigate("/approvals")}
+        />
+        <StatCard
+          label="Hours awaiting approval"
+          value={`${data.hours_awaiting_approval.toFixed(1)}h`}
+          onClick={() => navigate("/approvals")}
+        />
       </div>
 
       {data.pending_approvals > 0 && (
@@ -112,13 +121,15 @@ function StatCard({
   label,
   value,
   icon: Icon,
+  onClick,
 }: {
   label: string;
   value: number | string;
   icon?: typeof Users;
+  onClick?: () => void;
 }) {
   return (
-    <Card>
+    <Card className={onClick ? "cursor-pointer transition-colors hover:border-primary" : undefined} onClick={onClick}>
       <CardContent className="flex items-start justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.06em] text-label">{label}</p>

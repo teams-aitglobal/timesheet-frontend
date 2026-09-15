@@ -886,6 +886,8 @@ export default function ProjectWorkspace() {
                   type="date"
                   value={assignForm.start_date}
                   onChange={(event) => setAssignForm((prev) => ({ ...prev, start_date: event.target.value }))}
+                  min={project?.project_start_date}
+                  max={project?.project_end_date ?? undefined}
                   required
                 />
               </div>
@@ -896,6 +898,8 @@ export default function ProjectWorkspace() {
                   type="date"
                   value={assignForm.end_date}
                   onChange={(event) => setAssignForm((prev) => ({ ...prev, end_date: event.target.value }))}
+                  min={project?.project_start_date}
+                  max={project?.project_end_date ?? undefined}
                 />
               </div>
             </div>

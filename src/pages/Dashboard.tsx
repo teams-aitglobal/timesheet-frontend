@@ -68,7 +68,7 @@ export default function Dashboard() {
       {!loadError && !isLoading && data && (
         <div className="mt-6">
           {data.role === "EMPLOYEE" && <EmployeeDashboard data={data} />}
-          {data.role === "PROGRAM_MANAGER" && <ManagerDashboard data={data} />}
+          {data.role === "PROJECT_MANAGER" && <ManagerDashboard data={data} />}
           {data.role === "SUPER_ADMIN" && <AdminDashboard data={data} />}
         </div>
       )}

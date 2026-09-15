@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const TASK_BADGE_VARIANT: Record<string, "muted" | "pending" | "active" | "rejected"> = {
-  "Not Started": "muted",
-  "In Progress": "pending",
-  Completed: "active",
-  "On Hold": "muted",
-  Cancelled: "rejected",
-};
+import { TASK_BADGE_VARIANT } from "./task-badge";
 
 function formatDate(s: string): string {
   const [y, m, d] = s.split("-").map(Number);

@@ -44,6 +44,8 @@ const STATUS_BADGE_VARIANT: Record<TimesheetStatus, "muted" | "pending" | "activ
 
 const STATUS_FILTERS: Array<TimesheetStatus | "All"> = ["All", "Draft", "Submitted", "Approved", "Rejected"];
 
+const MY_TIMESHEETS_PAGE_SIZE = 50;
+
 const WORK_TYPES: WorkType[] = ["Assigned Task", "Adhoc", "Meeting"];
 
 interface ProjectOption {
@@ -292,10 +294,17 @@ function LogTimePanel({
   };
 
   const isToday = selectedDate >= todayISO();
+  const earliestLoggableDate = addDaysISO(todayISO(), -7);
+  const isAtEarliestDate = selectedDate <= earliestLoggableDate;
 
   const handleSave = async () => {
     setSaveError(null);
     setSaveNotice(null);
+
+    if (selectedDate < earliestLoggableDate) {
+      setSaveError("You can only log time for the past 7 days.");
+      return;
+    }
 
     const activeRows = rows.filter(
       (r) => r.projectId || r.workType || r.taskId || r.hours.trim() || r.description.trim(),
@@ -374,6 +383,7 @@ function LogTimePanel({
               variant="outline"
               size="icon"
               aria-label="Previous day"
+              disabled={isAtEarliestDate}
               onClick={() => setSelectedDate((d) => addDaysISO(d, -1))}
             >
               <ChevronLeft size={16} />
@@ -545,7 +555,10 @@ function MyTimesheetsPanel({
   const [projectFilter, setProjectFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [weekStart, setWeekStart] = useState(startOfWeekISO(todayISO()));
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [total, setTotal] = useState(0);
+  const [skip, setSkip] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -556,26 +569,52 @@ function MyTimesheetsPanel({
   const [editDescription, setEditDescription] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const load = () => {
+  // A custom From/To range (if set) takes over from the week navigator below.
+  const isCustomRange = Boolean(dateFrom || dateTo);
+  const effectiveDateFrom = isCustomRange ? dateFrom || undefined : weekStart;
+  const effectiveDateTo = isCustomRange ? dateTo || undefined : addDaysISO(weekStart, 6);
+  const isCurrentWeek = weekStart >= startOfWeekISO(todayISO());
+
+  const load = (nextSkip = 0) => {
     setIsLoading(true);
     setLoadError(null);
     listMyTimesheets({
       timesheet_status: statusFilter === "All" ? undefined : statusFilter,
       project_id: projectFilter || undefined,
-      date_from: dateFrom || undefined,
-      date_to: dateTo || undefined,
-      limit: 200,
+      date_from: effectiveDateFrom,
+      date_to: effectiveDateTo,
+      skip: nextSkip,
+      limit: MY_TIMESHEETS_PAGE_SIZE,
     })
-      .then((res) => setTimesheets(res.items))
+      .then((res) => {
+        setTimesheets(res.items);
+        setTotal(res.total);
+        setSkip(res.skip);
+      })
       .catch((err) => setLoadError(extractErrorMessage(err)))
       .finally(() => setIsLoading(false));
   };
 
   useEffect(() => {
-    load();
+    load(0);
     setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, projectFilter, dateFrom, dateTo]);
+  }, [statusFilter, projectFilter, dateFrom, dateTo, weekStart]);
+
+  const hasNextPage = skip + MY_TIMESHEETS_PAGE_SIZE < total;
+  const hasPrevPage = skip > 0;
+
+  const goPrevWeek = () => {
+    setDateFrom("");
+    setDateTo("");
+    setWeekStart((w) => addDaysISO(w, -7));
+  };
+
+  const goNextWeek = () => {
+    setDateFrom("");
+    setDateTo("");
+    setWeekStart((w) => addDaysISO(w, 7));
+  };
 
   const groups = useMemo(() => {
     const map = new Map<string, Timesheet[]>();
@@ -611,7 +650,7 @@ function MyTimesheetsPanel({
       const failedMessages = Object.values(result.failed);
       if (failedMessages.length > 0) setActionError(failedMessages.join(" "));
       setSelectedIds(new Set());
-      load();
+      load(skip);
     } catch (err) {
       setActionError(extractErrorMessage(err));
     } finally {
@@ -623,7 +662,7 @@ function MyTimesheetsPanel({
     setActionError(null);
     try {
       await deleteTimesheet(id);
-      load();
+      load(skip);
     } catch (err) {
       setActionError(extractErrorMessage(err));
     }
@@ -659,7 +698,7 @@ function MyTimesheetsPanel({
         await submitTimesheet(t.timesheet_id);
       }
       cancelEdit();
-      load();
+      load(skip);
     } catch (err) {
       setActionError(extractErrorMessage(err));
     } finally {
@@ -671,15 +710,69 @@ function MyTimesheetsPanel({
     setActionError(null);
     try {
       await submitTimesheet(id);
-      load();
+      load(skip);
     } catch (err) {
       setActionError(extractErrorMessage(err));
     }
   };
 
+  const weekTotalHours = timesheets.reduce((sum, t) => sum + t.hours, 0);
+
   return (
     <div>
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+      <Card className="mt-6">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
+          {isCustomRange ? (
+            <>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.06em] text-label">Showing custom range</p>
+                <p className="font-serif text-lg font-bold text-text">
+                  {dateFrom ? formatDateLabel(dateFrom) : "…"} – {dateTo ? formatDateLabel(dateTo) : "…"}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+              >
+                Back to this week
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="outline" size="icon" aria-label="Previous week" onClick={goPrevWeek}>
+                  <ChevronLeft size={16} />
+                </Button>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.06em] text-label">Showing</p>
+                  <p className="font-serif text-lg font-bold text-text">{weekRangeLabel(weekStart)}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Next week"
+                  disabled={isCurrentWeek}
+                  onClick={goNextWeek}
+                >
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-text">
+                <Clock size={16} className="text-label" />
+                {isLoading ? "…" : `${weekTotalHours.toFixed(1)}h`}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap gap-3">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-label">Status</p>
@@ -906,6 +999,28 @@ function MyTimesheetsPanel({
             </CardContent>
           </Card>
         ))}
+
+      {!isLoading && total > MY_TIMESHEETS_PAGE_SIZE && (
+        <div className="mt-4 flex items-center justify-between text-sm text-text-secondary">
+          <span>
+            Showing {skip + 1}–{Math.min(skip + MY_TIMESHEETS_PAGE_SIZE, total)} of {total}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!hasPrevPage}
+              onClick={() => load(Math.max(skip - MY_TIMESHEETS_PAGE_SIZE, 0))}
+            >
+              Previous
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={!hasNextPage} onClick={() => load(skip + MY_TIMESHEETS_PAGE_SIZE)}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

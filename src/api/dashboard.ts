@@ -41,7 +41,7 @@ export interface ManagerDashboardProject {
 }
 
 export interface ManagerDashboard {
-  role: "PROGRAM_MANAGER";
+  role: "PROJECT_MANAGER";
   my_projects: number;
   clients: number;
   team_members: number;

@@ -11,6 +11,8 @@ export interface TimesheetReportRow {
   work_date: string;
   project_id: string;
   project_name: string;
+  client_id: string;
+  client_name: string;
   work_type: WorkType;
   task_id: string | null;
   task_name: string | null;
@@ -23,6 +25,7 @@ export interface TimesheetReportRow {
 
 export interface TimesheetReportParams {
   project_id?: string;
+  client_id?: string;
   employee_id?: string;
   timesheet_status?: TimesheetReportStatus;
   date_from?: string;

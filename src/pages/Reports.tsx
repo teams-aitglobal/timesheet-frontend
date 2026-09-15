@@ -8,7 +8,7 @@ import { ProjectHoursReportTab } from "@/components/reports/ProjectHoursReportTa
 
 export default function Reports() {
   const { roles } = useAuth();
-  const canViewProjectHours = roles.includes("PROGRAM_MANAGER") || roles.includes("SUPER_ADMIN");
+  const canViewProjectHours = roles.includes("PROJECT_MANAGER") || roles.includes("SUPER_ADMIN");
   const [activeTab, setActiveTab] = useState<"timesheets" | "project-hours">("timesheets");
 
   return (
